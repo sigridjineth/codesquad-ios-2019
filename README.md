@@ -1,2 +1,4 @@
 # codesquad-ios-2019
-Codesquad iOS 2019 lecture
+
+코드스쿼드가 진행하는 10월 iOS/Swift 2주 강좌를 수강하고 학습한 내역을 정리합니다.
+프로젝트 및 코드 진행한 내용은 개인 GitHub 레포지토리로 저장되어 있습니다.
