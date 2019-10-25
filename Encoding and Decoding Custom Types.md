@@ -31,3 +31,111 @@ if let data = try? Data(contentsOf: settingsURL) {
 } //이렇게 PropertyListDecoder 객체를 만들고 decode 메소드를 사용하면 된다.
 ```
 
+```swift
+struct Coordinate: Codable {
+    var latitude: Double
+    var longitude: Double
+}
+
+struct Landmark: Codable {
+    // Double, String, Int 모두 Codable한 상태로 변환된다
+    var name: String
+    var foundingYear: Int
+    
+    // Custom Type을 적용해도 큰 문제 없이 해결된다
+    var location: Coordinate
+}
+```
+
+Array, Dictionary, Optional과 같은 빌트인 타입도 내부에 codable types를 포함하고 있으면 자연스럽게 `Codable`에 종속된다. 위의 코드에서 보듯이 `Coordinate`라는 Custom type을 추가해도 conform은 유지된다.
+
+```swift
+struct Landmark: Codable {
+    var name: String
+    var foundingYear: Int
+    var location: Coordinate
+    
+    // Landmark는 아래의 속성을 추가하더라도 계속 Codable한 상태를 유지하게 된다
+    var vantagePoints: [Coordinate]
+    var metadata: [String: String]
+    var website: URL?
+}
+```
+
+Codable은 Encodable과 Decodable을 포함하는 개념이므로, 별개의 개념으로 선언해주는 것도 가능하다.
+
+```swift
+struct Landmark: Encodable {
+    var name: String
+    var foundingYear: Int
+}
+```
+
+```swift
+struct Landmark: Decodable {
+    var name: String
+    var foundingYear: Int
+}
+```
+
+```swift
+struct Landmark: Codable {
+    var name: String
+    var foundingYear: Int
+    var location: Coordinate
+    var vantagePoints: [Coordinate]
+    
+    enum CodingKeys: String, CodingKey {
+        case name = "title"
+        case foundingYear = "founding_date"
+        
+        case location
+        case vantagePoints
+    }
+}
+```
+
+```swift
+struct Coordinate {
+    var latitude: Double
+    var longitude: Double
+    var elevation: Double
+
+    enum CodingKeys: String, CodingKey {
+        case latitude
+        case longitude
+        case additionalInfo
+    }
+    
+    enum AdditionalInfoKeys: String, CodingKey {
+        case elevation
+    }
+}
+```
+
+```swift
+extension Coordinate: Decodable {
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        latitude = try values.decode(Double.self, forKey: .latitude)
+        longitude = try values.decode(Double.self, forKey: .longitude)
+        
+        let additionalInfo = try values.nestedContainer(keyedBy: AdditionalInfoKeys.self, forKey: .additionalInfo)
+        elevation = try additionalInfo.decode(Double.self, forKey: .elevation)
+    }
+}
+```
+
+```swift
+extension Coordinate: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(latitude, forKey: .latitude)
+        try container.encode(longitude, forKey: .longitude)
+        
+        var additionalInfo = container.nestedContainer(keyedBy: AdditionalInfoKeys.self, forKey: .additionalInfo)
+        try additionalInfo.encode(elevation, forKey: .elevation)
+    }
+}
+```
+
